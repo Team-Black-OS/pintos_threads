@@ -3,7 +3,8 @@
 
 #include <round.h>
 #include <stdint.h>
-
+#include <list.h>
+#include "threads/malloc.h"
 /* Number of timer interrupts per second. */
 #define TIMER_FREQ 100
 
@@ -25,5 +26,6 @@ void timer_udelay (int64_t microseconds);
 void timer_ndelay (int64_t nanoseconds);
 
 void timer_print_stats (void);
-
+/*Compares the wait times of two list elements.*/
+bool less_than(const struct list_elem *first, const struct list_elem *second, void* aux);
 #endif /* devices/timer.h */

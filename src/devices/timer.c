@@ -7,6 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -30,11 +31,19 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+struct sleepy_thread {
+  int64_t *time_to_wakeup;
+  struct thread *t;
+  struct list_elem elem;
+};
+static struct list sleepy_thread_list;
+
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
 timer_init (void) 
 {
+  list_init(&sleepy_thread_list);
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
 }
@@ -90,10 +99,29 @@ void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
-
   ASSERT (intr_get_level () == INTR_ON);
+  // Create a struct for a sleeping thread.
+  struct sleepy_thread *trd = (struct sleepy_thread*) malloc(sizeof(struct sleepy_thread));
+  trd->time_to_wakeup = (int64_t*) malloc(sizeof(int64_t));
+  // Set the thread pointer to the current running thread.
+  trd->t = thread_current();
+  // Set the time_to_wakeup to the sum of the current time (in ticks) and the time to wait.
+  *(trd->time_to_wakeup) = (ticks+start);
+  printf("Adding: %d\n",*(trd->time_to_wakeup));
+  // Insert this new struct into the list of sleeping threads.
+  list_insert_ordered(&sleepy_thread_list, &trd->elem,&less_than,0);
+  int64_t test = (*list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
+  printf("Current head: %d\n",test);
   while (timer_elapsed (start) < ticks) 
     thread_yield ();
+}
+/*
+Function to compare the time_to_wakeup members of two list elements. 
+This is used by the list_insert_ordered() function to determine where
+a thread should go in the sleeping list.
+*/
+bool less_than(const struct list_elem *first, const struct list_elem *second, void* aux) {
+  return (*(list_entry(first,struct sleepy_thread,elem)->time_to_wakeup) < *(list_entry(second,struct sleepy_thread,elem)->time_to_wakeup));
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be

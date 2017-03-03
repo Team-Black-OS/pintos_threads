@@ -1,0 +1,6 @@
+Alarm Clock:
+Need to stop thread from busy waiting. Right now, thread will yield() continually, but stay on the run queue. We need to move the thread off of the run queue, and into a list. We can use Pintos' list implementation to keep list of each thread, ordered relative to the amount of time it needs to sleep.
+
+Possible approach:
+1. keep a static list of all "sleeping" threads. 
+2. When a thread calls "sleep", we compute (time_to_sleep + current_time) and add the thread to the sleep list. We can use list_insert_ordered() to insert the thread into the list in O(n) time, based on the time it needs to sleep. This is slower to insert threads, but avoids checking the time for each thread in the list at every timer interrupt. 
