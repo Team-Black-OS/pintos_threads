@@ -100,6 +100,7 @@ timer_sleep (int64_t ticks)
 {
   int64_t start = timer_ticks ();
   ASSERT (intr_get_level () == INTR_ON);
+  enum intr_level old_level;
   // Create a struct for a sleeping thread.
   struct sleepy_thread *trd = (struct sleepy_thread*) malloc(sizeof(struct sleepy_thread));
   trd->time_to_wakeup = (int64_t*) malloc(sizeof(int64_t));
@@ -110,10 +111,15 @@ timer_sleep (int64_t ticks)
   printf("Adding: %d\n",*(trd->time_to_wakeup));
   // Insert this new struct into the list of sleeping threads.
   list_insert_ordered(&sleepy_thread_list, &trd->elem,&less_than,0);
-  int64_t test = (*list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
+  int64_t test = *(list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
   printf("Current head: %d\n",test);
+  /*
   while (timer_elapsed (start) < ticks) 
     thread_yield ();
+  */
+  old_level = intr_disable();
+  thread_block();
+  intr_set_level(old_level);
 }
 /*
 Function to compare the time_to_wakeup members of two list elements. 
@@ -198,8 +204,23 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  enum intr_level old_level;
   ticks++;
+  if(!list_empty(&sleepy_thread_list))
+  {
+    int64_t next_to_wake = *(list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
+    old_level = intr_disable();
+    if(next_to_wake >= ticks)
+    {
+      struct sleepy_thread *ready_thread = list_entry(list_pop_front(&sleepy_thread_list),struct sleepy_thread,elem);
+      printf("Unblocking: %d\n",*(ready_thread->time_to_wakeup));
+      thread_unblock(ready_thread->t);
+    }
+    intr_set_level(old_level);
+  }
   thread_tick ();
+
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
