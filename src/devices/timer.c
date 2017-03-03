@@ -100,7 +100,10 @@ timer_sleep (int64_t ticks)
 {
   int64_t start = timer_ticks ();
   ASSERT (intr_get_level () == INTR_ON);
+  if (ticks <= 0)
+    return;
   enum intr_level old_level;
+    old_level = intr_disable();
   // Create a struct for a sleeping thread.
   struct sleepy_thread *trd = (struct sleepy_thread*) malloc(sizeof(struct sleepy_thread));
   trd->time_to_wakeup = (int64_t*) malloc(sizeof(int64_t));
@@ -113,11 +116,12 @@ timer_sleep (int64_t ticks)
   list_insert_ordered(&sleepy_thread_list, &trd->elem,&less_than,0);
   int64_t test = *(list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
   printf("Current head: %d\n",test);
-  /*
-  while (timer_elapsed (start) < ticks) 
+  
+  
+/*  while (timer_elapsed (start) < ticks) 
     thread_yield ();
   */
-  old_level = intr_disable();
+
   thread_block();
   intr_set_level(old_level);
 }
@@ -205,19 +209,25 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   enum intr_level old_level;
+
   ticks++;
-  if(!list_empty(&sleepy_thread_list))
+
+  while(!list_empty(&sleepy_thread_list))
   {
     int64_t next_to_wake = *(list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
-    old_level = intr_disable();
-    if(next_to_wake >= ticks)
+    if(next_to_wake <= ticks)
     {
+      old_level = intr_disable();
       struct sleepy_thread *ready_thread = list_entry(list_pop_front(&sleepy_thread_list),struct sleepy_thread,elem);
       printf("Unblocking: %d\n",*(ready_thread->time_to_wakeup));
       thread_unblock(ready_thread->t);
+      intr_set_level(old_level);
+    }else{
+      break;
     }
-    intr_set_level(old_level);
+
   }
+
   thread_tick ();
 
 
