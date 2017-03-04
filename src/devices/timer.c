@@ -33,7 +33,7 @@ static void real_time_delay (int64_t num, int32_t denom);
 
 struct sleepy_thread {
   int64_t *time_to_wakeup;
-  struct thread *t;
+  struct semaphore *sema;
   struct list_elem elem;
 };
 static struct list sleepy_thread_list;
@@ -102,28 +102,24 @@ timer_sleep (int64_t ticks)
   ASSERT (intr_get_level () == INTR_ON);
   if (ticks <= 0)
     return;
-  enum intr_level old_level;
-    old_level = intr_disable();
-  // Create a struct for a sleeping thread.
-  struct sleepy_thread *trd = (struct sleepy_thread*) malloc(sizeof(struct sleepy_thread));
-  trd->time_to_wakeup = (int64_t*) malloc(sizeof(int64_t));
-  // Set the thread pointer to the current running thread.
-  trd->t = thread_current();
-  // Set the time_to_wakeup to the sum of the current time (in ticks) and the time to wait.
-  *(trd->time_to_wakeup) = (ticks+start);
-  printf("Adding: %d\n",*(trd->time_to_wakeup));
-  // Insert this new struct into the list of sleeping threads.
-  list_insert_ordered(&sleepy_thread_list, &trd->elem,&less_than,0);
-  int64_t test = *(list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
-  printf("Current head: %d\n",test);
+  // Calculate the tick when this thread should be woken up.
+  int64_t wake_tick = (ticks+start);
+
+  struct semaphore *s = malloc(sizeof(struct semaphore));
+  // Initialize this semaphore with a value of 0.
+  // We want it to block after the very first call to sema_down().
+  sema_init(s,0);
+  struct sleepy_thread* new_sleeper = malloc(sizeof(struct sleepy_thread));
+  new_sleeper->sema = s;
+  new_sleeper->time_to_wakeup = (int64_t*)malloc(sizeof(int64_t));
+  *(new_sleeper->time_to_wakeup) = wake_tick;
   
-  
+  list_insert_ordered(&sleepy_thread_list,&new_sleeper->elem,&less_than,0);
+
+  sema_down(s);
 /*  while (timer_elapsed (start) < ticks) 
     thread_yield ();
   */
-
-  thread_block();
-  intr_set_level(old_level);
 }
 /*
 Function to compare the time_to_wakeup members of two list elements. 
@@ -208,7 +204,6 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
-  enum intr_level old_level;
 
   ticks++;
 
@@ -217,11 +212,9 @@ timer_interrupt (struct intr_frame *args UNUSED)
     int64_t next_to_wake = *(list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
     if(next_to_wake <= ticks)
     {
-      old_level = intr_disable();
       struct sleepy_thread *ready_thread = list_entry(list_pop_front(&sleepy_thread_list),struct sleepy_thread,elem);
       printf("Unblocking: %d\n",*(ready_thread->time_to_wakeup));
-      thread_unblock(ready_thread->t);
-      intr_set_level(old_level);
+      sema_up(ready_thread->sema);
     }else{
       break;
     }
