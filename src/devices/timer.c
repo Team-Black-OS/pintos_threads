@@ -248,7 +248,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
       // Note: list_pop_front() removes the element (like popping from a stack).
       struct sleepy_thread *ready_thread = list_entry(list_pop_front(&sleepy_thread_list),struct sleepy_thread,elem);
       // Debugging message.
-      printf("Unblocking: %d\n",*(ready_thread->time_to_wakeup));
+      //printf("Unblocking: %d\n",*(ready_thread->time_to_wakeup));
       // Call sema_up on this sleep_thread structure's semaphore. This will wake the associated
       // thread. It can then return from the timer_sleep function and continue working.
       sema_up(ready_thread->sema);

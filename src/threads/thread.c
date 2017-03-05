@@ -200,6 +200,11 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+  // Check the current priority of the 
+  if (running_thread()->priority <= t->priority){
+    //printf("Thread with equal or higher priority is starting. Yielding current thread.\n");
+    thread_yield();
+  }
 
   return tid;
 }
@@ -256,7 +261,11 @@ thr_less()
   This is used to determine where the thread should be placed in the run queue.
 */
 bool thr_less(const struct list_elem *first, const struct list_elem *second, void* aux){
- return  ((list_entry(first,struct thread,elem)->priority) < (list_entry(second,struct thread,elem)->priority));
+  // Had to change this to less than or equals, because otherwise there would be problems when multiple
+  // threads have the same priority (one of the threads would dominate, because it would always be at the top of the ready queue)
+  // Changing < to <= ensures that the current thread is inserted *behind* any exisiting threads with the same priority,
+  // which should allow multiple same-priority threads to share time equally.
+ return  ((list_entry(first,struct thread,elem)->priority) <= (list_entry(second,struct thread,elem)->priority));
 }
 
 /* Returns the name of the running thread. */
@@ -324,8 +333,10 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+  if (cur != idle_thread) {
+     // list_push_back(&ready_list,&cur->elem);
+    list_insert_ordered (&ready_list, &cur->elem,&thr_less,0);
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -357,15 +368,24 @@ thread_set_priority (int new_priority)
         that the running thread will yield if its priority changes to lower
         than that of the next-highest priority thread in the queue.
   */
-  thread_current ()->priority = new_priority;
+  
+  //list_remove(&thread_current()->elem);
+  //printf("Current Priority: %d with TID: %d\n", thread_current()->priority, thread_current()->tid);
+
+  // Set the new priority for the thread.
+  thread_current()->priority = new_priority;
+  // Yielding will put the current running thread (the thread changing its priority)
+  // into the ready_queue in a sorted order. If the thread is already the highest priority,
+  // it *should* be at the front of the queue. When this happens, the scheduler will detect
+  // that the highest priority thread and the current thread are the same, and continue executing
+  // the current thread.
+  thread_yield();
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void) 
 {
-  // Check the new priority of the thread. If this priority is lower than the previous priority,
-  // remove from the ready queue and re-insert. Then yield the current thread.
   return thread_current ()->priority;
 }
 
