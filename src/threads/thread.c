@@ -237,9 +237,17 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  // 1. Create a boolean function to compare two threads' priorities.
+  // 2. Change list_push_back to list_insert_ordered, and pass a function pointer
+  //    to the boolean comparison function.
+  //list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list,&t->elem,);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+}
+// Function comapres the prioities of two threads.
+bool thr_less(const struct list_elem *first, const struct list_elem *second, void* aux){
+ return  (*(list_entry(first,struct thread,elem)->priority) < *(list_entry(second,struct sleepy_thread,elem)->priority));
 }
 
 /* Returns the name of the running thread. */
@@ -335,6 +343,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  // Change this to check priority and reinsert as necessary.
   thread_current ()->priority = new_priority;
 }
 
@@ -342,6 +351,8 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
+  // Check the new priority of the thread. If this priority is lower than the previous priority,
+  // remove from the ready queue and re-insert. Then yield the current thread.
   return thread_current ()->priority;
 }
 
@@ -490,6 +501,8 @@ alloc_frame (struct thread *t, size_t size)
 static struct thread *
 next_thread_to_run (void) 
 {
+  // Replace list_pop_front with list_pop_back (Threads are still sorted in ascending order, so we need the highest prioirty
+  // which is stored in the back.
   if (list_empty (&ready_list))
     return idle_thread;
   else
