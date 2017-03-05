@@ -241,13 +241,22 @@ thread_unblock (struct thread *t)
   // 2. Change list_push_back to list_insert_ordered, and pass a function pointer
   //    to the boolean comparison function.
   //list_push_back (&ready_list, &t->elem);
-  list_insert_ordered(&ready_list,&t->elem,);
+  list_insert_ordered(&ready_list,&t->elem,&thr_less,0);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
-// Function comapres the prioities of two threads.
+
+/* 
+thr_less()
+  Compares the value of the 'priority' member of two 'struct thread' structures.
+  We use the list_entry macro to get a pointers to the structures containing
+  list elems 'first' and 'second'. Once we have the struct pointer, we can access each
+  pointer's priority member to compare them. 
+
+  This is used to determine where the thread should be placed in the run queue.
+*/
 bool thr_less(const struct list_elem *first, const struct list_elem *second, void* aux){
- return  (*(list_entry(first,struct thread,elem)->priority) < *(list_entry(second,struct sleepy_thread,elem)->priority));
+ return  ((list_entry(first,struct thread,elem)->priority) < (list_entry(second,struct thread,elem)->priority));
 }
 
 /* Returns the name of the running thread. */
@@ -343,7 +352,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  // Change this to check priority and reinsert as necessary.
+  /*
+  TODO: This will only be called by the running thread. We need to make sure
+        that the running thread will yield if its priority changes to lower
+        than that of the next-highest priority thread in the queue.
+  */
   thread_current ()->priority = new_priority;
 }
 
@@ -506,7 +519,7 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+    return list_entry (list_pop_back (&ready_list), struct thread, elem);
 }
 
 /* Completes a thread switch by activating the new thread's page
