@@ -68,7 +68,9 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0) 
     {
-      list_push_back (&sema->waiters, &thread_current ()->elem);
+      // Changed the list_push_back call into a call to list_insert_ordered().
+      // Same process we used for alarm clock.
+      list_insert_ordered (&sema->waiters, &thread_current ()->elem,&thr_less,NULL);
       thread_block ();
     }
   sema->value--;
@@ -114,9 +116,20 @@ sema_up (struct semaphore *sema)
 
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters)) 
-    thread_unblock (list_entry (list_pop_front (&sema->waiters),
+    thread_unblock (list_entry (list_pop_back (&sema->waiters),
                                 struct thread, elem));
   sema->value++;
+  // If we aren't in an interrupt handler, we should call thread_yield here
+  // to make sure that the possible higher-priority thread can preempt us.
+  // Notes:
+  // 1. This solution (manually checking if we're in an interrupt or not) seems like too much of a hack-y workaround to me, so I'm going to try and find
+  //    a better solution here.
+  // 2. This can be made more efficient by checking the priority of the current thread, and
+  //    the priority of the thread we just unblocked. If we're still higher priority, we don't need
+  //    to yield to the new thread.
+  if(!intr_context()){
+    thread_yield();
+  }
   intr_set_level (old_level);
 }
 

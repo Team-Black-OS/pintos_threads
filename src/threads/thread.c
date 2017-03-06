@@ -119,8 +119,16 @@ thread_start (void)
 
 /* Called by the timer interrupt handler at each timer tick.
    Thus, this function runs in an external interrupt context. */
+   /* Changed this function slightly. There are two cases where we need
+      to yield after the timer interrupt. 
+
+      1. If our time slice is done. (This is the case already covered by default).
+      2. If the timer interrupt handler woke up a thread. In this case, we need to yield so that
+         the scheduler can choose the highest priority thread to go next. (The highest priority thread might have
+         been woken by the last timer interrupt).
+   */
 void
-thread_tick (void) 
+thread_tick (bool thread_was_woken) 
 {
   struct thread *t = thread_current ();
 
@@ -135,7 +143,8 @@ thread_tick (void)
     kernel_ticks++;
 
   /* Enforce preemption. */
-  if (++thread_ticks >= TIME_SLICE)
+  // Added a new check to see if thread(s) were woken during the last timer interrupt.
+  if (++thread_ticks >= TIME_SLICE || thread_was_woken)
     intr_yield_on_return ();
 }
 

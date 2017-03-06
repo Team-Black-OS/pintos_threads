@@ -229,6 +229,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   // Increment the tick count for this interrupt.
   ticks++;
+  bool woke_a_thread = false;
   // Check the list of sleeping threads. If the list is empty, do nothing.
   // If the list contains some sleeping threads, we need to check them to see if 
   // they should be woken. This is a loop, because there may be multiple threads
@@ -252,6 +253,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
       // Call sema_up on this sleep_thread structure's semaphore. This will wake the associated
       // thread. It can then return from the timer_sleep function and continue working.
       sema_up(ready_thread->sema);
+      // Set a boolean variable if we woke one or more thread(s) during this interrupt.
+      woke_a_thread = true;
     }
     // If we find any thread that doesn't need to be woken yet we can stop looping, as all threads
     // after this thread are guaranteed to have equal or larger 'time_until_wakeup' values.
@@ -262,8 +265,8 @@ timer_interrupt (struct intr_frame *args UNUSED)
     }
 
   }
-  // Call thread_tick()
-  thread_tick ();
+  // Call thread_tick(), pass the boolean variable that tells if we woke a thread or not.
+  thread_tick (woke_a_thread);
 
 
 }
