@@ -40,7 +40,8 @@ void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
-
+// Used to wake the highest priority thread waiting on a semaphore.
+bool cond_less(const struct list_elem *first, const struct list_elem *second, void *aux);
 /* Optimization barrier.
 
    The compiler will not reorder operations across an

@@ -313,7 +313,16 @@ cond_wait (struct condition *cond, struct lock *lock)
   sema_down (&waiter.semaphore);
   lock_acquire (lock);
 }
-
+// Function returns true if the first semaphore's highest priority thread is lower priority than
+// the second semaphore's highest priority thread.
+bool cond_less(const struct list_elem *first, const struct list_elem *second, void *aux){
+  struct semaphore* one = &list_entry(first,struct semaphore_elem,elem)->semaphore;
+  struct semaphore* two = &list_entry(second,struct semaphore_elem,elem)->semaphore;
+  int priority_one = list_entry(list_back(&(one->waiters)),struct thread,elem)->priority;
+  int priority_two = list_entry(list_back(&(two->waiters)),struct thread,elem)->priority;
+ // printf("Priority: %d, Priority %d\n",priority_one,priority_two);
+  return(priority_one < priority_two);
+}
 /* If any threads are waiting on COND (protected by LOCK), then
    this function signals one of them to wake up from its wait.
    LOCK must be held before calling this function.
@@ -330,7 +339,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock_held_by_current_thread (lock));
 
   if (!list_empty (&cond->waiters)) 
-    sema_up (&list_entry (list_pop_front (&cond->waiters),
+    sema_up (&list_entry (list_pop_max (&cond->waiters,&cond_less,NULL),
                           struct semaphore_elem, elem)->semaphore);
 }
 
