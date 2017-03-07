@@ -119,7 +119,8 @@ sema_up (struct semaphore *sema)
     thread_unblock (list_entry (list_pop_back (&sema->waiters),
                                 struct thread, elem));
   sema->value++;
-  // If we aren't in an interrupt handler, we should call thread_yield here
+  intr_set_level (old_level);
+    // If we aren't in an interrupt handler, we should call thread_yield here
   // to make sure that the possible higher-priority thread can preempt us.
   // Notes:
   // 1. This solution (manually checking if we're in an interrupt or not) seems like too much of a hack-y workaround to me, so I'm going to try and find
@@ -130,7 +131,6 @@ sema_up (struct semaphore *sema)
   if(!intr_context()){
     thread_yield();
   }
-  intr_set_level (old_level);
 }
 
 static void sema_test_helper (void *sema_);
