@@ -9,14 +9,16 @@ Module to enable fixed-point simple arithmetic operations using a
 #ifndef FIXED_POINT_H
 #define FIXED_POINT_H
 #include <stdint.h>
-#define MULTIPLICAND 16384
+#include <stdio.h>
+
+
 struct fp_num {
 int32_t num;
 };
 
 // Returns the integer value (Rounded to zero) of the given
 // fp_num structure.
-int32_t to_int(struct fp_num);
+int32_t to_int(struct fp_num, int rounding);
 
 // Returns the fixed-point value of the given integer number.
 struct fp_num to_fp(int32_t num);
@@ -47,4 +49,6 @@ struct fp_num divide_fp(struct fp_num,struct fp_num);
 // Divides a fixed-point number by an integer number. Result is fixed-point.
 struct fp_num divide_fp_int(struct fp_num,int32_t);
 
+// Prints a fixed-point number;
+void print_fp(struct fp_num);
 #endif
