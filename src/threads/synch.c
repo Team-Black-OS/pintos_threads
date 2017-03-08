@@ -209,8 +209,38 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+  // PRIORITY DONATION TK
+
+  // disable interrupts
+  intr_disable();
+
+  if (lock->holder != NULL)
+  {
+    // set the running thread to the lock it is currently
+    // blocked on
+    struct thread *curr = thread_current();
+    struct lock *lock = curr->blocked_on;
+
+    iterations = 0;
+    while(lock && iterations < 8) 
+    {
+      // check priority of thread against holder of lock
+      if (curr->priority > lock->holder->priority)
+      {
+        lock->holder->priority = curr->priority;
+        curr = lock->holder;
+        lock->holder = curr->blocked_on;
+      }
+    }      
+  }
+
+ // END PRIORITY DONATION   
   sema_down (&lock->semaphore);
-  lock->holder = thread_current ();
+
+  lock->holder = thread_current();
+  thread_current()->blocked_on = NULL;
+  // turn interrurpts back on
+  intr_enable();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -243,7 +273,7 @@ lock_release (struct lock *lock)
 {
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
-
+  //
   lock->holder = NULL;
   sema_up (&lock->semaphore);
 }
