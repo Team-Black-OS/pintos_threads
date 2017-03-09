@@ -89,9 +89,14 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
+    struct list donated_priorities;
+    struct lock* blocked_on;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+
+    struct list_elem prior_elem;
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -139,5 +144,6 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 bool thr_less(const struct list_elem *first,const struct list_elem *second,void* aux);
-
+// Returns the maximum of two integers.
+int max(int,int);
 #endif /* threads/thread.h */

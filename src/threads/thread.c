@@ -72,11 +72,11 @@ void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
 // For Priority Donation TK
-void
+/*void
 donate_priority(int priority, thread t) 
 {
   
-}
+}*/
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -281,9 +281,26 @@ bool thr_less(const struct list_elem *first, const struct list_elem *second, voi
   // threads have the same priority (one of the threads would dominate, because it would always be at the top of the ready queue)
   // Changing < to <= ensures that the current thread is inserted *behind* any exisiting threads with the same priority,
   // which should allow multiple same-priority threads to share time equally.
- return  ((list_entry(first,struct thread,elem)->priority) <= (list_entry(second,struct thread,elem)->priority));
-}
+  struct thread* fthread = list_entry(first,struct thread,elem);
+  struct thread* sthread = list_entry(second,struct thread,elem);
+  int max_pri_one = fthread->priority;
+  int max_pri_two = sthread->priority;
+  if (!list_empty(&fthread->donated_priorities)){
+    max_pri_one = max(max_pri_one,list_back(&fthread->donated_priorities));
+  }
+  if(!list_empty(&sthread->donated_priorities)){
+    max_pri_two = max(max_pri_two,list_back(&sthread->donated_priorities));
+  }
+  
+ return  (max_pri_one <= max_pri_two);
 
+}
+int max(int one, int two){
+  if (one > two){
+    return one;
+  }
+  return two;
+}
 /* Returns the name of the running thread. */
 const char *
 thread_name (void) 
@@ -523,7 +540,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-
+  list_init(&t->donated_priorities);
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);

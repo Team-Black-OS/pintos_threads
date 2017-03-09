@@ -214,7 +214,7 @@ lock_acquire (struct lock *lock)
   // disable interrupts
   intr_disable();
 
-  if (lock->holder != NULL)
+ /* if (lock->holder != NULL)
   {
     // set the running thread to the lock it is currently
     // blocked on
@@ -232,13 +232,14 @@ lock_acquire (struct lock *lock)
         lock->holder = curr->blocked_on;
       }
     }      
-  }
-
+  }*/
+  
  // END PRIORITY DONATION   
   sema_down (&lock->semaphore);
 
   lock->holder = thread_current();
-  thread_current()->blocked_on = NULL;
+ // thread_current()->blocked_on = NULL;
+  
   // turn interrurpts back on
   intr_enable();
 }
