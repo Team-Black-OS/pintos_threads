@@ -210,10 +210,9 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
 
   // PRIORITY DONATION TK
-
+  enum intr_level old_level;
   // disable interrupts
-  intr_disable();
-
+  old_level = intr_disable ();
   if (lock->holder != NULL)
   {
     // set the running thread to the lock it is currently
@@ -240,7 +239,7 @@ lock_acquire (struct lock *lock)
   lock->holder = thread_current();
   thread_current()->blocked_on = NULL;
   // turn interrurpts back on
-  intr_enable();
+  intr_set_level (old_level);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
