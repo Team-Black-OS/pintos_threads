@@ -71,12 +71,15 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+<<<<<<< HEAD
 // For Priority Donation TK
 /*void
 donate_priority(int priority, thread t) 
 {
   
 }*/
+=======
+>>>>>>> 8b5e1aa887deb86752e2dc667a95c02d6e9358af
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in

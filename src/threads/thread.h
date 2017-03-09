@@ -89,9 +89,13 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
+<<<<<<< HEAD
     struct list donated_priorities;
     struct lock* blocked_on;
 
+=======
+    struct lock * blocked_on;           /* Lock thread is waiting on. */ 
+>>>>>>> 8b5e1aa887deb86752e2dc667a95c02d6e9358af
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -106,6 +110,9 @@ struct thread
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
+
+// Created a thread function donate_priority() TK
+// void donate_priority(int priority, thread t);
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -134,6 +141,9 @@ void thread_yield (void);
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
+
+// Priority donation TK
+// void donate_priority(void);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
