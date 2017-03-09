@@ -214,30 +214,44 @@ lock_acquire (struct lock *lock)
   // disable interrupts
 
   old_level = intr_disable ();
-  /*
+  
   if (lock->holder != NULL)
   {
     // set the running thread to the lock it is currently
     // blocked on
     struct thread *curr = thread_current();
-    struct lock *lock = curr->blocked_on;
-
-    iterations = 0;
-    while(lock && iterations < 8) 
+    struct lock *newlock = lock;
+    int iterations = 0;
+   while(newlock != NULL && iterations < 8) 
     {
+      printf("Iteration %d\n",iterations);
       // check priority of thread against holder of lock
-      if (curr->priority > lock->holder->priority)
+      printf("Checking priorities\n");
+      printf("Current priority: %d\n", curr->priority);
+      printf("Current lock holder priority: %d\n", newlock->holder->priority);
+      if (curr->priority > newlock->holder->priority)
       {
-        lock->holder->priority = curr->priority;
-        curr = lock->holder;
-        lock->holder = curr->blocked_on;
+        //lock->holder->priority = curr->priority;
+
+        // Insert the current thread into the donee thread's list of donated priorities.
+        printf("Inserting:\n");
+        list_insert_ordered(&newlock->holder->donated_priorities,&thread_current()->prior_elem, &thr_less,NULL);
+        printf("Get lock holder:\n");
+        curr = newlock->holder;
+        printf("Set lock blocked on:\n");
+        newlock = curr->blocked_on;
+        printf("Remove thread from ready list\n");
+        list_remove(&curr->elem);
+        printf("Unblock thread:\n");
+        curr->status = THREAD_BLOCKED;
+        thread_unblock(curr);
       }
-    }      
-  }*/
+      ++iterations;
+    } 
+  }
   
  // END PRIORITY DONATION   
   sema_down (&lock->semaphore);
-
   lock->holder = thread_current();
  // thread_current()->blocked_on = NULL;
   

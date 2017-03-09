@@ -235,6 +235,7 @@ thread_block (void)
   schedule ();
 }
 
+
 /* Transitions a blocked thread T to the ready-to-run state.
    This is an error if T is not blocked.  (Use thread_yield() to
    make the running thread ready.)
@@ -280,10 +281,10 @@ bool thr_less(const struct list_elem *first, const struct list_elem *second, voi
   int max_pri_one = fthread->priority;
   int max_pri_two = sthread->priority;
   if (!list_empty(&fthread->donated_priorities)){
-    max_pri_one = max(max_pri_one,list_back(&fthread->donated_priorities));
+    max_pri_one = max(max_pri_one,list_entry(list_back(&fthread->donated_priorities),struct thread,prior_elem)->priority);
   }
   if(!list_empty(&sthread->donated_priorities)){
-    max_pri_two = max(max_pri_two,list_back(&sthread->donated_priorities));
+    max_pri_two = max(max_pri_two,list_entry(list_back(&sthread->donated_priorities),struct thread,prior_elem)->priority);
   }
   
  return  (max_pri_one <= max_pri_two);
@@ -413,7 +414,11 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  if (list_empty(&thread_current()->donated_priorities)){
+    return thread_current()->priority;
+  }else{
+    return max(thread_current()->priority,list_entry(list_back(&thread_current()->donated_priorities),struct thread,prior_elem)->priority);
+  }
 }
 
 /* Sets the current thread's nice value to NICE. */
