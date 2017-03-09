@@ -212,8 +212,9 @@ lock_acquire (struct lock *lock)
   // PRIORITY DONATION TK
   enum intr_level old_level;
   // disable interrupts
-/*
+
   old_level = intr_disable ();
+  /*
   if (lock->holder != NULL)
   {
     // set the running thread to the lock it is currently

@@ -89,13 +89,9 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
-<<<<<<< HEAD
-    struct list donated_priorities;
-    struct lock* blocked_on;
 
-=======
-    struct lock * blocked_on;           /* Lock thread is waiting on. */ 
->>>>>>> 8b5e1aa887deb86752e2dc667a95c02d6e9358af
+    struct list donated_priorities;
+    struct lock* blocked_on;            /* Lock thread is waiting on. */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
