@@ -486,6 +486,15 @@ void calc_recent_cpu(struct thread *t)
   r = to_int(rCPU);
 }
 
+void calc_load_avg(void)
+{
+  fp_num l1 = divide_fp(to_fp(59), to_fp(60));
+  l1 = multiply_int_fp(load_avg, l1);
+  fp_num l2 = divide_fp(to_fp(1), to_fp(60));
+  l2 = multiply_int_fp(load_avg, list_size(&ready_list));
+
+  load_avg = to_int(add(l1, l2));
+}
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
