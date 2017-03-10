@@ -87,7 +87,10 @@ struct thread
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
-    int priority;                       /* Priority. */
+    int priority;
+    //=================================
+    int tempPriority; //holds value for priority donation
+    //===================================
     struct list_elem allelem;           /* List element for all threads list. */
 
     struct list donated_priorities;
@@ -143,7 +146,9 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
-
+//===========================================
+void reinsert_thread(struct thread *t);
+//========================================*/
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
