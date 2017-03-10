@@ -15,6 +15,10 @@
 #include "userprog/process.h"
 #endif
 
+#define NICE_INIT 0
+#define NICE_MIN -20
+#define NICE_MAX 20
+
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -420,7 +424,10 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice UNUSED) 
 {
-  /* Not yet implemented. */
+  // sets current_thread nice to new one
+  thread_current()->priority = nice;
+  // recalc thread's priority
+  calc_priority(thread_current());
 }
 
 /* Returns the current thread's nice value. */
@@ -447,6 +454,20 @@ thread_get_recent_cpu (void)
   return 0;
 }
 
+void calc_priority(struct *thread t)
+{
+  // priority = PRI_MAX - (recent_cpu/4) - (nice * 2)
+  fp_num priMax = to_fp(PRI_MAX);
+  fp_num rCPU = divide_fp_int(t->recent_cpu, 4);
+  fp_num nicex2 = to_fp(nice * 2);
+
+  priMax = subtract_fp(priMax, rCPU);
+  priMax = subtract_fp(priMax, nicex2);
+  p = to_int(priMax);
+
+  t->priority = p;
+}
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -538,6 +559,9 @@ init_thread (struct thread *t, const char *name, int priority)
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
+
+  // mlfqs stuff
+  t->nice = NICE_INIT;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

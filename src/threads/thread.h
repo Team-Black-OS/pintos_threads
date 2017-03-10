@@ -88,16 +88,14 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
-    int new_priority;                   /* Holds the highest donated priority*/
     struct list_elem allelem;           /* List element for all threads list. */
-    struct list donated_priorities;
-    struct lock* blocked_on;            /* Lock thread is waiting on. */
 
-    
+    int nice;                           /* Determines how nice the thread should be
+                                           with other threads */
+    int recent_cpu;                     /* Estimate of CPU time the thread
+                                           has used recently (round down)*/
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-    struct list_elem prior_elem;
-
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -108,9 +106,6 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
   };
 
-// Created a thread function donate_priority() TK
-// void donate_priority(int priority, thread t);
-
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -118,8 +113,8 @@ extern bool thread_mlfqs;
 
 void thread_init (void);
 void thread_start (void);
-// Changed function to accept a boolean value.
-void thread_tick (bool);
+
+void thread_tick (void);
 void thread_print_stats (void);
 
 typedef void thread_func (void *aux);
@@ -139,9 +134,6 @@ void thread_yield (void);
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
-// Priority donation TK
-// void donate_priority(void);
-
 int thread_get_priority (void);
 void thread_set_priority (int);
 
@@ -150,7 +142,6 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-bool thr_less(const struct list_elem *first,const struct list_elem *second,void* aux);
-// Returns the maximum of two integers.
-int max(int,int);
+void calc_priority(struct *thread);
+
 #endif /* threads/thread.h */
