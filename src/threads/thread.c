@@ -15,9 +15,16 @@
 #include "userprog/process.h"
 #endif
 
+// Niceness values
 #define NICE_INIT 0
 #define NICE_MIN -20
 #define NICE_MAX 20
+
+// Recent_CPU values
+#define RECENT_CPU_INIT 0
+
+// Load average
+#define LOAD_AVG_INIT 0
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
@@ -428,33 +435,32 @@ thread_set_nice (int nice UNUSED)
   thread_current()->priority = nice;
   // recalc thread's priority
   calc_priority(thread_current());
+  // TODO: If the running thread no longer has the 
+  // highest priority yields.
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return to_int(multiply_int_fp(100, load_avg));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return to_int(multiply_int_fp(100, thread_current()->recent_cpu));
 }
 
-void calc_priority(struct *thread t)
+void calc_priority(struct thread *t)
 {
   // priority = PRI_MAX - (recent_cpu/4) - (nice * 2)
   fp_num priMax = to_fp(PRI_MAX);
@@ -466,7 +472,20 @@ void calc_priority(struct *thread t)
   p = to_int(priMax);
 
   t->priority = p;
+  // thread's priority changed'
 }
+
+void calc_recent_cpu(struct thread *t)
+{
+  fp_num rCPU = multiply_int_fp(load_avg, 2);
+  fp_num divisor = add_fp_int(rCPU, 1);
+  rCPU = divide_fp(rCPU, divisor);
+  rCPU = multiply_int_fp(rCPU, t->recent_cpu);
+  rCPU = add_fp_int(rCPU, t->nice);
+
+  r = to_int(rCPU);
+}
+
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
