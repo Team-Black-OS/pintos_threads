@@ -5,8 +5,17 @@
 #include <stdint.h>
 #include <list.h>
 #include "threads/malloc.h"
+#include "threads/synch.h"
 /* Number of timer interrupts per second. */
 #define TIMER_FREQ 100
+
+
+struct sleepy_thread {
+  int64_t time_to_wakeup;
+  struct semaphore sema;
+  struct list_elem elem;
+};
+
 
 void timer_init (void);
 void timer_calibrate (void);

@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "devices/pit.h"
 #include "threads/interrupt.h"
-#include "threads/synch.h"
 #include "threads/thread.h"
 
   
@@ -31,11 +30,7 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
-struct sleepy_thread {
-  int64_t *time_to_wakeup;
-  struct semaphore *sema;
-  struct list_elem elem;
-};
+
 static struct list sleepy_thread_list;
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
@@ -107,33 +102,26 @@ timer_sleep (int64_t ticks)
   // Calculate the time (in ticks) when the thread should be woken.
   int64_t wake_tick = (ticks+start);
   // Allocate a semaphore to block this thread. (put this thread on its waiting list.)
-  struct semaphore *s = malloc(sizeof(struct semaphore));
-  // Initialize to 0 so that the first call to sema_down() will add the current thread
-  // to the waiting list and block it.
-  sema_init(s,0);
   // Allocate a new 'sleepy_thread' structure to hold our semaphore and the 'wake_tick'
   // element. This structure also embeds a 'list_elem' member so it can be part of a list
   // of sleeping threads.
-  struct sleepy_thread* new_sleeper = malloc(sizeof(struct sleepy_thread));
+  struct sleepy_thread new_sleeper;
   // The new 'sleepy_thread' structure should reference the semaphore we just created.
   // When it is time to wake up the thread, the timer innterrupt handler can just call
   // sema_up() on the given semaphore. It doesn't need to directly access the thread.
-  new_sleeper->sema = s;
+  sema_init(&new_sleeper.sema,0);
   // Allocate space for the member variable that holds the 'wake_tick' element.
-  new_sleeper->time_to_wakeup = (int64_t*)malloc(sizeof(int64_t));
-  // Set the value of the 'time_to_wakeup' member to 'wake_tick'
-  // We need to dereference because 'time_to_wakeup' is a pointer to an int64t.
-  *(new_sleeper->time_to_wakeup) = wake_tick;
+  new_sleeper.time_to_wakeup = wake_tick;
   // Insert our new structure into the list of sleeping threads. 
   // We use the 'less_than' function to place the struct in the corrected (sorted)
   // position inside the list. This takes O(n) time here, but it saves time in
   // the interrupt handler, since we don't need to scan the entire list (just the first element).
-  list_insert_ordered(&sleepy_thread_list,&new_sleeper->elem,&less_than,0);
+  list_insert_ordered(&sleepy_thread_list,&new_sleeper.elem,&less_than,0);
 
   // This call to sema_down() will block the current executing thread (the one executing this
   // function). This happens because we initilized the semaphore to 0. The thread will be woken
   // (and return from the timer_sleep() function) when the time interrupt handler calls sema_up().
-  sema_down(s);
+  sema_down(&new_sleeper.sema);
 
 
   // The rest of the handling happens in timer_interrupt().
@@ -150,7 +138,7 @@ This is used by the list_insert_ordered() function to determine where
 a thread should go in the sleeping list.
 */
 bool less_than(const struct list_elem *first, const struct list_elem *second, void* aux) {
-  return (*(list_entry(first,struct sleepy_thread,elem)->time_to_wakeup) < *(list_entry(second,struct sleepy_thread,elem)->time_to_wakeup));
+  return (list_entry(first,struct sleepy_thread,elem)->time_to_wakeup < list_entry(second,struct sleepy_thread,elem)->time_to_wakeup);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -240,7 +228,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
     // Get the time (in ticks) when the next thread should be woken up.
     // This list is sorted, so it's guaranteed that the value at the front of
     // the list is the smallest tick amount (needs to be woken soonest).
-    int64_t next_to_wake = *(list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup);
+    int64_t next_to_wake = list_entry(list_front(&sleepy_thread_list),struct sleepy_thread,elem)->time_to_wakeup;
     // If the current time (represented by 'ticks') is greater than or equal to the deadline for
     // the next thread to be woken, that thread should be woken immediately.
     if(next_to_wake <= ticks)
@@ -252,7 +240,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
       //printf("Unblocking: %d\n",*(ready_thread->time_to_wakeup));
       // Call sema_up on this sleep_thread structure's semaphore. This will wake the associated
       // thread. It can then return from the timer_sleep function and continue working.
-      sema_up(ready_thread->sema);
+      sema_up(&ready_thread->sema);
       // Set a boolean variable if we woke one or more thread(s) during this interrupt.
       woke_a_thread = true;
     }
