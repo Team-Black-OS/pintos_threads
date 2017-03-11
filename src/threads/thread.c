@@ -211,7 +211,7 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
   // Check the current priority of the
-  if (running_thread()->priority <= t->priority){
+  if (running_thread()->priority < t->priority){
     //printf("Thread with equal or higher priority is starting. Yielding current thread.\n");
     thread_yield();
   }
