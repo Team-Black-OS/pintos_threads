@@ -87,10 +87,16 @@ struct thread
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
-    int priority;                       /* Priority. */
-    int new_priority;                   /* Holds the highest donated priority*/
+
+    int base_priority;
+        int priority;
+    //=================================
+    //int tempPriority; //holds value for priority donation
+    //===================================
     struct list_elem allelem;           /* List element for all threads list. */
-    struct list donated_priorities;
+
+    struct list thread_donors;
+
     struct lock* blocked_on;            /* Lock thread is waiting on. */
 
     
@@ -144,13 +150,16 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
-
+//===========================================
+void reinsert_thread(struct thread *t);
+//========================================*/
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 bool thr_less(const struct list_elem *first,const struct list_elem *second,void* aux);
+bool thr_prior_less(const struct list_elem *first, const struct list_elem *second, void* aux);
 // Returns the maximum of two integers.
 int max(int,int);
 #endif /* threads/thread.h */
