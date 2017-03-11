@@ -289,6 +289,26 @@ bool thr_less(const struct list_elem *first, const struct list_elem *second, voi
  return  (max_pri_one <= max_pri_two);
 
 }
+
+bool thr_prior_less(const struct list_elem *first, const struct list_elem *second, void* aux){
+  // Had to change this to less than or equals, because otherwise there would be problems when multiple
+  // threads have the same priority (one of the threads would dominate, because it would always be at the top of the ready queue)
+  // Changing < to <= ensures that the current thread is inserted *behind* any exisiting threads with the same priority,
+  // which should allow multiple same-priority threads to share time equally.
+  struct thread* fthread = list_entry(first,struct thread,prior_elem);
+  struct thread* sthread = list_entry(second,struct thread,prior_elem);
+  int max_pri_one = fthread->priority;
+  int max_pri_two = sthread->priority;
+  //if (!list_empty(&fthread->donated_priorities)){
+  //  max_pri_one = max(max_pri_one,list_back(&fthread->donated_priorities));
+  //}
+  //if(!list_empty(&sthread->donated_priorities)){
+  //  max_pri_two = max(max_pri_two,list_back(&sthread->donated_priorities));
+  //}
+
+ return  (max_pri_one <= max_pri_two);
+
+}
 int max(int one, int two){
   if (one > two){
     return one;

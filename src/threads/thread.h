@@ -157,6 +157,7 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 bool thr_less(const struct list_elem *first,const struct list_elem *second,void* aux);
+bool thr_prior_less(const struct list_elem *first, const struct list_elem *second, void* aux);
 // Returns the maximum of two integers.
 int max(int,int);
 #endif /* threads/thread.h */

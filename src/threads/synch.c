@@ -218,7 +218,7 @@ lock_acquire (struct lock *lock)
   ++entered;
   //printf("Entered for %d time\n",entered);
   //=========================================TRY TO DONATE PRIORITY
-  if(lock->holder != NULL && lock->holder->base_priority < thread_current()->priority){
+  if(lock->holder != NULL && lock->holder->priority < thread_current()->priority){
       // Create a thread pointer for the current thread.
       struct thread* current_thread = thread_current();
       //printf("Current priority %d\n",current_thread->priority);
@@ -229,7 +229,7 @@ lock_acquire (struct lock *lock)
      // printf("List size: %d\n",list_size(&lock_holder->thread_donors));
       
       // Insert current thread into the list containing thread donors for the thread holding the lock.
-      list_insert_ordered(&lock_holder->thread_donors,&current_thread->prior_elem,&thr_less,NULL);
+      list_insert_ordered(&lock_holder->thread_donors,&current_thread->prior_elem,&thr_prior_less,NULL);
       struct thread* crd = list_entry(list_back(&lock_holder->thread_donors),struct thread,prior_elem);
      // printf("Highest Thread Priority: %d\nTID: %d\n",crd->priority,crd->tid);
       // Set lock holder priority to the highest priority thread waiting for it.
