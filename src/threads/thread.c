@@ -4,6 +4,7 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include "threads/fixed-point.h"
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -14,6 +15,17 @@
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
+
+// Niceness values
+#define NICE_INIT 0
+#define NICE_MIN -20
+#define NICE_MAX 20
+
+// Recent_CPU values
+#define RECENT_CPU_INIT 0
+
+// Load average
+#define LOAD_AVG_INIT 0
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
@@ -113,6 +125,7 @@ thread_start (void)
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
+  load_avg = LOAD_AVG_INIT;
 
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&idle_started);
@@ -428,36 +441,70 @@ void reinsert_thread(struct thread *t){
 }
 //=================================================*/
 
+void calc_priority(struct thread *t)
+{
+  // priority = PRI_MAX - (recent_cpu/4) - (nice *2)
+  struct fp_num priMax = to_fp(PRI_MAX);
+  struct fp_num rCPU = divide_fp_int(to_fp(t->recent_cpu), 4);
+  struct fp_num nicex2 = to_fp(t->nice * 2);
 
+  priMax = subtract_fp(priMax, rCPU);
+  priMax = subtract_fp(priMax, nicex2);
+  int p = to_int(priMax, 2);
+
+  t->priority = p;
+  // thread's priority has changed
+}
+
+void calc_recent_cpu(struct thread *t)
+{
+  struct fp_num rCPU = multiply_int_fp(to_fp(load_avg), 2);
+  struct fp_num divisor = add_fp_int(rCPU, 1);
+  rCPU = divide_fp(rCPU, divisor);
+  rCPU = multiply_int_fp(rCPU, t->recent_cpu);
+  rCPU = add_fp_int(rCPU, t->nice);
+
+  t->recent_cpu = to_int(rCPU, 2);
+}
+
+void calc_load_avg(void)
+{
+  struct fp_num l1 = divide_fp(to_fp(59), to_fp(60));
+  l1 = multiply_int_fp(l1, load_avg);
+  struct fp_num l2 = divide_fp(to_fp(1), to_fp(60));
+  l2 = multiply_int_fp(to_fp(list_size(&ready_list)), load_avg);
+
+  load_avg = to_int(add(l1,l2), 2);
+}
 /* Sets the current thread's nice value to NICE. */
 void
 thread_set_nice (int nice UNUSED)
 {
-  /* Not yet implemented. */
+  thread_current()->priority = nice;
+  calc_priority(thread_current());
+  // TODO: If the running thread no longer has the 
+  // highest priority, yields
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return to_int(multiply_int_fp(to_fp(100), load_avg), 2);
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->recent_cpu;  
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -555,6 +602,11 @@ init_thread (struct thread *t, const char *name, int priority)
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
+
+  //mlfqs initilization
+  t->nice = NICE_INIT;
+  t->recent_cpu = RECENT_CPU_INIT;
+
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
