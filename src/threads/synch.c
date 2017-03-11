@@ -41,6 +41,7 @@
 
    - up or "V": increment the value (and wake up one waiting
      thread, if any). */
+     static int entered = 0;
 void
 sema_init (struct semaphore *sema, unsigned value)
 {
@@ -214,22 +215,43 @@ lock_acquire (struct lock *lock)
   // disable interrupts
 
   old_level = intr_disable ();
+  ++entered;
+  //printf("Entered for %d time\n",entered);
   //=========================================TRY TO DONATE PRIORITY
-  if(lock->holder != NULL && lock->holder->priority < thread_current()->priority){
-      lock->holder->tempPriority = lock->holder->priority;
-      lock->holder->priority = thread_current()->priority;
-      reinsert_thread(lock->holder);
+  if(lock->holder != NULL && lock->holder->base_priority < thread_current()->priority){
+      // Create a thread pointer for the current thread.
+      struct thread* current_thread = thread_current();
+      //printf("Current priority %d\n",current_thread->priority);
+      // Create thread pointer for current lock holder.
+      struct thread* lock_holder = lock->holder;
+      // Current thread is blocked on this lock.
+      current_thread->blocked_on = lock;
+     // printf("List size: %d\n",list_size(&lock_holder->thread_donors));
+      
+      // Insert current thread into the list containing thread donors for the thread holding the lock.
+      list_insert_ordered(&lock_holder->thread_donors,&current_thread->prior_elem,&thr_less,NULL);
+      struct thread* crd = list_entry(list_back(&lock_holder->thread_donors),struct thread,prior_elem);
+     // printf("Highest Thread Priority: %d\nTID: %d\n",crd->priority,crd->tid);
+      // Set lock holder priority to the highest priority thread waiting for it.
+    //  printf("List size: %d\n",list_size(&lock_holder->thread_donors));
+      if(!list_empty(&lock_holder->thread_donors)){
+      lock_holder->priority = crd->priority;
+   //   printf("New Priority %d\n",lock_holder->priority);
+      }
+      else{
+        lock_holder->priority = current_thread->priority;
+      }
   }
   //=============================================================*/
-
+  // turn interrurpts back on
+  intr_set_level (old_level);
  // END PRIORITY DONATION
   sema_down (&lock->semaphore);
 
   lock->holder = thread_current();
- // thread_current()->blocked_on = NULL;
 
-  // turn interrurpts back on
-  intr_set_level (old_level);
+
+
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -263,15 +285,44 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
+  enum intr_level old_level;
+  old_level = intr_disable();
+  struct thread* current = thread_current();
+
   //======================SEES IF PRIORITY WAS DONATED, IF SO GOES BACK TO ORIGINAL PRIORITY
-  if(lock->holder->tempPriority != 0){
-      lock->holder->priority = lock->holder->tempPriority;
-      lock->holder->tempPriority = 0;
-      reinsert_thread(thread_current());
+  // If we have one or more donated priorities
+  if(!list_empty(&current->thread_donors)){
+   // printf("Current Thread: %d\n TID: %d\n Thread Magic %x\n",current->priority, current->tid,current->magic);
+   // printf("List size %d\n",list_size(&current->thread_donors));
+    struct list_elem *e;
+    // Loop through each thread that donated a priority
+    for (e = list_begin (&current->thread_donors); e != list_end (&current->thread_donors); e = list_next (e))
+    {
+
+      struct thread *t = list_entry (e, struct thread, prior_elem);
+      // If this thread donated its priority because of the lock we're releasing, remove this thread
+      // from the list of donors.
+      if(t->blocked_on == lock){
+      list_remove(&t->prior_elem);
+      }
+    }
+    // If the list is now empty,
+    if(list_empty(&current->thread_donors)){
+      // Return our current priority to the base priority.
+      current->priority = current->base_priority;
+    }else{
+      // Get the next highest priority, and set our new priority.
+      current->priority = list_entry(list_back(&current->thread_donors),struct thread,prior_elem)->priority;
+    }
+   
   }
+
   //===================================================================================*/
+  intr_set_level(old_level);
+  lock->holder->blocked_on = NULL;
   lock->holder = NULL;
   sema_up (&lock->semaphore);
+
 }
 
 /* Returns true if the current thread holds LOCK, false

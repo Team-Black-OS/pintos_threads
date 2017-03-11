@@ -390,23 +390,22 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority)
 {
-  /*
-  TODO: This will only be called by the running thread. We need to make sure
-        that the running thread will yield if its priority changes to lower
-        than that of the next-highest priority thread in the queue.
-  */
+  enum intr_level old_level = intr_disable();
+  // Structure to hold current thread.
+ // printf("Thread tid: %d\n Old Priority: %d\n Base Priority: %d\n Thread Magic %x\n",thread_current()->tid,thread_current()->priority,thread_current()->base_priority,thread_current()->magic);
+  struct thread* thr = thread_current();
+  int old_prior = thr->priority;
+  // If base_priority and priority are the same, set them both.
+  if(thr->base_priority == thr->priority){
+    thr->priority = new_priority;
+  }
+    // Otherwise just set base_priority
+    thr->base_priority = new_priority;
 
-  //list_remove(&thread_current()->elem);
-  //printf("Current Priority: %d with TID: %d\n", thread_current()->priority, thread_current()->tid);
-
-  // Set the new priority for the thread.
-  thread_current()->priority = new_priority;
-  // Yielding will put the current running thread (the thread changing its priority)
-  // into the ready_queue in a sorted order. If the thread is already the highest priority,
-  // it *should* be at the front of the queue. When this happens, the scheduler will detect
-  // that the highest priority thread and the current thread are the same, and continue executing
-  // the current thread.
-  thread_yield();
+    if(old_prior > new_priority){
+    thread_yield();
+    }
+    intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -415,9 +414,9 @@ thread_get_priority (void)
 {
   return thread_current ()->priority;
 }
-int thread_get_tempPriority(void){
-  return thread_current()->tempPriority;
-}
+//int thread_get_tempPriority(void){
+//  return thread_current()->tempPriority;
+//}
 //====================================REINSERT THREAD
 void reinsert_thread(struct thread *t){
 //  printf("THREAD REINSERT START");
@@ -548,10 +547,12 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   //======================================================
-  t->tempPriority = 0; //initializes temp Priority
+  //t->tempPriority = 0; //initializes temp Priority
  //====================================================
+  // Sets base priority for this thread.
+  t->base_priority = priority;
   t->magic = THREAD_MAGIC;
-  list_init(&t->donated_priorities);
+  list_init(&t->thread_donors);
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
