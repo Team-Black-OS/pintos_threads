@@ -116,25 +116,18 @@ sema_up (struct semaphore *sema)
   ASSERT (sema != NULL);
 
   old_level = intr_disable ();
-  struct thread *unblk_thrd;
+  struct thread *unblk_thrd = NULL;
   if (!list_empty (&sema->waiters)){
     unblk_thrd = list_entry(list_pop_back (&sema->waiters),struct thread,elem);
     thread_unblock (unblk_thrd);
   }
   sema->value++;
-
-    // If we aren't in an interrupt handler, we should call thread_yield here
-  // to make sure that the possible higher-priority thread can preempt us.
-  // Notes:
-  // 1. This solution (manually checking if we're in an interrupt or not) seems like too much of a hack-y workaround to me, so I'm going to try and find
-  //    a better solution here.
-  // 2. This can be made more efficient by checking the priority of the current thread, and
-  //    the priority of the thread we just unblocked. If we're still higher priority, we don't need
-  //    to yield to the new thread.
+      intr_set_level (old_level);
+  //printf("Before check.\n");
   if(!intr_context() && unblk_thrd && unblk_thrd->priority > thread_current()->priority){
     thread_yield();
   }
-    intr_set_level (old_level);
+  //printf("After check.\n");
 }
 
 static void sema_test_helper (void *sema_);
