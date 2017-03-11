@@ -228,7 +228,12 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   // Increment the tick count for this interrupt.
-  ticks++;
+  ticks++; // number of timer ticks since OS booted
+  if (thread_mlfqs == true)
+  {
+    
+  }
+
   bool woke_a_thread = false;
   // Check the list of sleeping threads. If the list is empty, do nothing.
   // If the list contains some sleeping threads, we need to check them to see if 

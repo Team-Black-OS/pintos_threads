@@ -124,6 +124,7 @@ thread_start (void)
 
   /* Start preemptive thread scheduling. */
   intr_enable ();
+  load_avg = LOAD_AVG_INIT;
 
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&idle_started);
@@ -437,6 +438,7 @@ thread_set_nice (int nice UNUSED)
   calc_priority(thread_current());
   // TODO: If the running thread no longer has the 
   // highest priority yields.
+  
 }
 
 /* Returns the current thread's nice value. */
@@ -483,7 +485,7 @@ void calc_recent_cpu(struct thread *t)
   rCPU = multiply_int_fp(rCPU, t->recent_cpu);
   rCPU = add_fp_int(rCPU, t->nice);
 
-  r = to_int(rCPU);
+  t->recent_cpu = to_int(rCPU);
 }
 
 void calc_load_avg(void)
@@ -590,6 +592,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
   // mlfqs stuff
   t->nice = NICE_INIT;
+  t->recent_cpu = RECENT_CPU_INIT;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

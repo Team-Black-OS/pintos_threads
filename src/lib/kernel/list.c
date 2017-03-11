@@ -503,6 +503,7 @@ list_max (struct list *list, list_less_func *less, void *aux)
     }
   return max;
 }
+
 // Added a new function here to find the max element, and then pop it
 // from the list. Works just like the other list_pop_xxx functions.
 struct list_elem *list_pop_max(struct list* list, list_less_func *less, void *aux){
