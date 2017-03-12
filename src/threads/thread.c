@@ -438,7 +438,7 @@ thread_get_priority (void)
 //  return thread_current()->tempPriority;
 //}
 //====================================REINSERT THREAD
-void reinsert_thread(struct thread *t){
+void reinsert_thread(){
 //  printf("THREAD REINSERT START");
   list_sort(&ready_list,&thr_less,0);
   //list_remove (&t->elem);

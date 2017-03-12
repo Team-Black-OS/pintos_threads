@@ -217,8 +217,8 @@ lock_acquire (struct lock *lock)
   struct thread* lock_holder = lock->holder;
   // Pointer to current lock.
   struct lock* current_lock = lock;
-  //printf("Entered for %d time\n",entered);
-  //=========================================TRY TO DONATE PRIORITY
+  
+    //=========================================TRY TO DONATE PRIORITY
   if(current_thread != NULL && lock_holder != NULL && lock_holder->priority < current_thread->priority){
 
       current_thread->blocked_on = lock;
@@ -228,7 +228,7 @@ lock_acquire (struct lock *lock)
       
       
 
-       struct thread* crd = list_entry(list_back(&lock_holder->thread_donors),struct thread,prior_elem);
+      struct thread* crd = list_entry(list_back(&lock_holder->thread_donors),struct thread,prior_elem);
       lock_holder->priority = crd->priority;
 
 
@@ -242,6 +242,8 @@ lock_acquire (struct lock *lock)
 
         lock_holder = hold;
       }
+
+      reinsert_thread();
   }
   //=============================================================*/
   // turn interrurpts back on

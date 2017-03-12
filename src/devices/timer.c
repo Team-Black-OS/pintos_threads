@@ -100,7 +100,7 @@ timer_sleep (int64_t ticks)
 {
   int64_t start = timer_ticks ();
   ASSERT (intr_get_level () == INTR_ON);
-
+  enum intr_level old_level = intr_disable();
   // Check that the tick value is non-negative and non-zero.
   if (ticks <= 0)
     return;
@@ -129,7 +129,7 @@ timer_sleep (int64_t ticks)
   // position inside the list. This takes O(n) time here, but it saves time in
   // the interrupt handler, since we don't need to scan the entire list (just the first element).
   list_insert_ordered(&sleepy_thread_list,&new_sleeper->elem,&less_than,0);
-
+  intr_set_level(old_level);
   // This call to sema_down() will block the current executing thread (the one executing this
   // function). This happens because we initilized the semaphore to 0. The thread will be woken
   // (and return from the timer_sleep() function) when the time interrupt handler calls sema_up().
