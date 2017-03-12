@@ -111,6 +111,7 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+  initial_thread->nice = NICE_INIT;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -606,12 +607,16 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
-  t->priority = priority;
+  calc_priority(t);
   //======================================================
   //t->tempPriority = 0; //initializes temp Priority
  //====================================================
   // Sets base priority for this thread.
   t->base_priority = priority;
+  if(t != initial_thread)
+  {
+  t->nice = thread_get_nice();
+  }
   t->magic = THREAD_MAGIC;
   list_init(&t->thread_donors);
   old_level = intr_disable ();
@@ -619,7 +624,7 @@ init_thread (struct thread *t, const char *name, int priority)
   intr_set_level (old_level);
 
   //mlfqs initilization
-  t->nice = NICE_INIT;
+
   t->recent_cpu = RECENT_CPU_INIT;
 
 }
