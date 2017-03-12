@@ -142,7 +142,7 @@ thread_start (void)
          been woken by the last timer interrupt).
    */
 void
-thread_tick (bool thread_was_woken)
+thread_tick (bool thread_was_woken, int64_t tick)
 {
   struct thread *t = thread_current ();
 
@@ -154,13 +154,35 @@ thread_tick (bool thread_was_woken)
     user_ticks++;
 #endif
   else
+  {
     kernel_ticks++;
+    
+    // if not the idle_thread
+    // increment recent_cpu for current thread at every timer tick
+    ++thread_current()->recent_cpu;
 
+    if (ticks % TIMER_FREQ == 0)
+    {
+        // update priority, recent_cpu, load_avg
+        thread_foreach(&update_mlfqs, NULL);
+    }
+  }
+    
   /* Enforce preemption. */
   // Added a new check to see if thread(s) were woken during the last timer interrupt.
   if (++thread_ticks >= TIME_SLICE || thread_was_woken)
     intr_yield_on_return ();
 }
+
+void update_mlfqs(struct thread* t, void * v)
+{
+      calc_recent_cpu(t);
+      // update load_avg?
+      calc_load_avg();
+      // update priority?
+      calc_priority(t);
+}
+
 
 /* Prints thread statistics. */
 void

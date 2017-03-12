@@ -164,6 +164,8 @@ void calc_priority(struct thread *t);
 void calc_recent_cpu(struct thread *t);
 void calc_load_avg(void);
 
+void update_mlfqs(struct thread* t, void * v);
+
 bool thr_less(const struct list_elem *first,const struct list_elem *second,void* aux);
 // Returns the maximum of two integers.
 int max(int,int);
