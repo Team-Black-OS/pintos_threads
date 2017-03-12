@@ -218,7 +218,7 @@ lock_acquire (struct lock *lock)
   struct lock* current_lock = lock;
   
     //=========================================TRY TO DONATE PRIORITY
-  if(current_thread != NULL && lock_holder != NULL && lock_holder->priority < current_thread->priority){
+  if(!thread_mlfqs && current_thread != NULL && lock_holder != NULL && lock_holder->priority < current_thread->priority){
       // Set the current thread to be blocked on this lock.
       current_thread->blocked_on = lock;
       // Insert this thread into the list of donors for the lock holder.
@@ -292,7 +292,7 @@ lock_release (struct lock *lock)
 
   //======================SEES IF PRIORITY WAS DONATED, IF SO GOES BACK TO ORIGINAL PRIORITY
   // If we have one or more donated priorities:
-  if(!list_empty(&current->thread_donors)){
+  if(!thread_mlfqs && !list_empty(&current->thread_donors)){
     struct list_elem *e;
     // Loop through each thread that donated a priority.
     for (e = list_begin (&current->thread_donors); e != list_end (&current->thread_donors); e = list_next (e))
