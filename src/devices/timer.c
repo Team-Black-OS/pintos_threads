@@ -8,6 +8,7 @@
 #include "threads/synch.h"
 #include "threads/thread.h"
 
+
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -229,6 +230,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   // Increment the tick count for this interrupt.
   ticks++;
+  
   bool woke_a_thread = false;
   // Check the list of sleeping threads. If the list is empty, do nothing.
   // If the list contains some sleeping threads, we need to check them to see if 
@@ -267,8 +269,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
   }
   // Call thread_tick(), pass the boolean variable that tells if we woke a thread or not.
   thread_tick (woke_a_thread);
-
-
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
