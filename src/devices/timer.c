@@ -7,6 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "threads/thread.c"
 
   
 /* See [8254] for hardware details of the 8254 timer chip. */
@@ -229,6 +230,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   // Increment the tick count for this interrupt.
   ticks++;
+  
   bool woke_a_thread = false;
   // Check the list of sleeping threads. If the list is empty, do nothing.
   // If the list contains some sleeping threads, we need to check them to see if 
@@ -267,6 +269,29 @@ timer_interrupt (struct intr_frame *args UNUSED)
   }
   // Call thread_tick(), pass the boolean variable that tells if we woke a thread or not.
   thread_tick (woke_a_thread);
+  
+  if (thread_current() != idle_thread)
+  {
+    // if not the idle_thread
+    // increment recent_cpu for current thread at every timer tick
+    ++thread_current()->recent_cpu;
+    if (ticks % TIMER_FREQ == 0)
+    {
+        struct list_elem *e;
+        // update recent_cpu every time slice in all list?
+        e = list_head (&all_list);
+        while ((e = list_next (e)) != list_end (&all_list)) 
+        {
+          // this thread t gets updated upon each element
+          struct thread* t = list_entry(e, struct thread, allelem); 
+          // pass the computation each thread
+          calc_recent_cpu(t);
+          // update load_avg?
+          calc_load_avg();
+        }
+    }
+  }
+
 
 
 }
