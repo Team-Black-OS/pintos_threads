@@ -495,7 +495,13 @@ thread_set_nice (int nice UNUSED)
 {
   thread_current()->priority = nice;
   calc_priority(thread_current());
-  // TODO: If the running thread no longer has the 
+  struct list_elem *elem1 = list_max(&ready_list,&thr_less,0);
+  struct thread* temp = list_entry(elem1, struct thread,elem
+  );
+  if (thread_current()->priority < temp->priority){
+    thread_yield();
+  }
+  // If the running thread no longer has the 
   // highest priority, yields
 }
 
@@ -583,7 +589,7 @@ running_thread (void)
   return pg_round_down (esp);
 }
 
-/* Returns true if T appears to point to a valid thread. */
+/* Returns true if T appearsf to point to a valid thread. */
 static bool
 is_thread (struct thread *t)
 {
