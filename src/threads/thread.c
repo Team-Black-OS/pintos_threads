@@ -256,7 +256,7 @@ thread_unblock (struct thread *t)
   // 2. Change list_push_back to list_insert_ordered, and pass a function pointer
   //    to the boolean comparison function.
   //list_push_back (&ready_list, &t->elem);
-  list_insert_ordered(&ready_list,&t->elem,&thr_less,0);
+  list_push_back(&ready_list,&t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -286,7 +286,7 @@ bool thr_less(const struct list_elem *first, const struct list_elem *second, voi
   //  max_pri_two = max(max_pri_two,list_back(&sthread->donated_priorities));
   //}
 
- return  (max_pri_one <= max_pri_two);
+ return  (max_pri_one < max_pri_two);
 
 }
 
@@ -382,7 +382,7 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread) {
      // list_push_back(&ready_list,&cur->elem);
-    list_insert_ordered (&ready_list, &cur->elem,&thr_less,0);
+    list_push_back(&ready_list, &cur->elem);
   }
   cur->status = THREAD_READY;
   schedule ();
@@ -604,7 +604,7 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
-    return list_entry (list_pop_back (&ready_list), struct thread, elem);
+    return list_entry (list_pop_max (&ready_list,&thr_less,NULL), struct thread, elem);
 }
 
 /* Completes a thread switch by activating the new thread's page

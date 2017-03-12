@@ -243,7 +243,7 @@ lock_acquire (struct lock *lock)
         lock_holder = hold;
       }
 
-      reinsert_thread();
+      //reinsert_thread();
   }
   //=============================================================*/
   // turn interrurpts back on
