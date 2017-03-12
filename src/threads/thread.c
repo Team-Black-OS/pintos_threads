@@ -211,7 +211,8 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
   // Check the current priority of the
-  if (running_thread()->priority < t->priority){
+  if (running_thread()->priority < t->priority)
+  {
     //printf("Thread with equal or higher priority is starting. Yielding current thread.\n");
     thread_yield();
   }
@@ -271,40 +272,25 @@ thr_less()
   This is used to determine where the thread should be placed in the run queue.
 */
 bool thr_less(const struct list_elem *first, const struct list_elem *second, void* aux){
-  // Had to change this to less than or equals, because otherwise there would be problems when multiple
-  // threads have the same priority (one of the threads would dominate, because it would always be at the top of the ready queue)
-  // Changing < to <= ensures that the current thread is inserted *behind* any exisiting threads with the same priority,
-  // which should allow multiple same-priority threads to share time equally.
+
   struct thread* fthread = list_entry(first,struct thread,elem);
   struct thread* sthread = list_entry(second,struct thread,elem);
   int max_pri_one = fthread->priority;
   int max_pri_two = sthread->priority;
-  //if (!list_empty(&fthread->donated_priorities)){
-  //  max_pri_one = max(max_pri_one,list_back(&fthread->donated_priorities));
-  //}
-  //if(!list_empty(&sthread->donated_priorities)){
-  //  max_pri_two = max(max_pri_two,list_back(&sthread->donated_priorities));
-  //}
+
 
  return  (max_pri_one < max_pri_two);
 
 }
-
+// thr_prior_less
+// Allows us to keep each thread's donor list sorted.
 bool thr_prior_less(const struct list_elem *first, const struct list_elem *second, void* aux){
-  // Had to change this to less than or equals, because otherwise there would be problems when multiple
-  // threads have the same priority (one of the threads would dominate, because it would always be at the top of the ready queue)
-  // Changing < to <= ensures that the current thread is inserted *behind* any exisiting threads with the same priority,
-  // which should allow multiple same-priority threads to share time equally.
+
   struct thread* fthread = list_entry(first,struct thread,prior_elem);
   struct thread* sthread = list_entry(second,struct thread,prior_elem);
   int max_pri_one = fthread->priority;
   int max_pri_two = sthread->priority;
-  //if (!list_empty(&fthread->donated_priorities)){
-  //  max_pri_one = max(max_pri_one,list_back(&fthread->donated_priorities));
-  //}
-  //if(!list_empty(&sthread->donated_priorities)){
-  //  max_pri_two = max(max_pri_two,list_back(&sthread->donated_priorities));
-  //}
+
 
  return  (max_pri_one <= max_pri_two);
 
@@ -381,7 +367,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) {
-     // list_push_back(&ready_list,&cur->elem);
+
     list_push_back(&ready_list, &cur->elem);
   }
   cur->status = THREAD_READY;
@@ -421,10 +407,11 @@ thread_set_priority (int new_priority)
   }
     // Otherwise just set base_priority
     thr->base_priority = new_priority;
-
+    // If we are lower priority than we were before, we yield to a new thread.
     if(old_prior > new_priority){
     thread_yield();
     }
+    // Restore interrupt level.
     intr_set_level(old_level);
 }
 
@@ -434,16 +421,11 @@ thread_get_priority (void)
 {
   return thread_current ()->priority;
 }
-//int thread_get_tempPriority(void){
-//  return thread_current()->tempPriority;
-//}
+
 //====================================REINSERT THREAD
-void reinsert_thread(){
-//  printf("THREAD REINSERT START");
+void reinsert_thread()
+{
   list_sort(&ready_list,&thr_less,0);
-  //list_remove (&t->elem);
-  //list_insert_ordered(&ready_list,&t->elem,&thr_less,0);
-//  printf("THREAD REINSERT SUCCESS?");
 }
 //=================================================*/
 

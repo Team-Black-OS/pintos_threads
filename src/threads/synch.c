@@ -206,10 +206,9 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  // PRIORITY DONATION TK
   enum intr_level old_level;
-  // disable interrupts
 
+  // Disable interrupts for the duration of the queue modification.
   old_level = intr_disable ();
   // Pointer to current thread.
   struct thread* current_thread = thread_current();
@@ -220,41 +219,38 @@ lock_acquire (struct lock *lock)
   
     //=========================================TRY TO DONATE PRIORITY
   if(current_thread != NULL && lock_holder != NULL && lock_holder->priority < current_thread->priority){
-
+      // Set the current thread to be blocked on this lock.
       current_thread->blocked_on = lock;
-      //printf("Thread %s is waiting on Thread %s",current_thread->name,current_thread->blocked_on->holder->name);
-      // Insert current thread into the list containing thread donors for the thread holding the lock.
+      // Insert this thread into the list of donors for the lock holder.
       list_insert_ordered(&lock_holder->thread_donors,&current_thread->prior_elem,&thr_prior_less,NULL);
       
-      
-
+      // Get pointer to thread with highest donated priority for this lock.
       struct thread* crd = list_entry(list_back(&lock_holder->thread_donors),struct thread,prior_elem);
+
+      // Set lock_holder priority to be the highest donated priority.
       lock_holder->priority = crd->priority;
 
 
       while(lock_holder->blocked_on){
-        //printf("%s is waiting on %s\n",current_thread->name,lock_holder->name);
+        // Set current hold variable to be equal to the thread that lock_holder is waiting on.
         struct thread* hold = lock_holder->blocked_on->holder;
-
+        // Sort the list so that thread donors are in their correct positions.
         list_sort(&hold->thread_donors,&thr_prior_less,NULL);
-
+        // Set the holder priority to be the highest priority on the donor list.
         hold->priority = list_entry(list_back(&hold->thread_donors),struct thread,prior_elem)->priority;
-
+        // New lock_holder is the thread that this lock holder was blocked on (if any).
         lock_holder = hold;
       }
 
       //reinsert_thread();
   }
   //=============================================================*/
-  // turn interrurpts back on
-
-
- // END PRIORITY DONATION
-
+  // Call sema_down() on this lock.
   sema_down (&lock->semaphore);
-
+  // Set lock holder to the current thread when we return from
+  // sema_down().
   lock->holder = thread_current();
- // lock->holder->blocked_on = NULL;
+  // Set interrupt level back to what it was before.
   intr_set_level (old_level);
 
 }
@@ -295,12 +291,10 @@ lock_release (struct lock *lock)
   struct thread* current = thread_current();
 
   //======================SEES IF PRIORITY WAS DONATED, IF SO GOES BACK TO ORIGINAL PRIORITY
-  // If we have one or more donated priorities
+  // If we have one or more donated priorities:
   if(!list_empty(&current->thread_donors)){
-   // printf("Current Thread: %d\n TID: %d\n Thread Magic %x\n",current->priority, current->tid,current->magic);
-   // printf("List size %d\n",list_size(&current->thread_donors));
     struct list_elem *e;
-    // Loop through each thread that donated a priority
+    // Loop through each thread that donated a priority.
     for (e = list_begin (&current->thread_donors); e != list_end (&current->thread_donors); e = list_next (e))
     {
 
@@ -319,14 +313,14 @@ lock_release (struct lock *lock)
       // Get the next highest priority, and set our new priority.
       current->priority = list_entry(list_back(&current->thread_donors),struct thread,prior_elem)->priority;
     }
-   
   }
 
   //===================================================================================*/
-
-  //lock->holder->blocked_on = NULL;
+  // Set lock holder to NULL.
   lock->holder = NULL;
+  // Call sema_up on the lock because we're done here.
   sema_up (&lock->semaphore);
+  // Restore interrupt level.
   intr_set_level(old_level);
 }
 
