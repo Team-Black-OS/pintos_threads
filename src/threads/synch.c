@@ -41,7 +41,6 @@
 
    - up or "V": increment the value (and wake up one waiting
      thread, if any). */
-     static int entered = 0;
 void
 sema_init (struct semaphore *sema, unsigned value)
 {
@@ -213,8 +212,6 @@ lock_acquire (struct lock *lock)
   struct thread* current_thread = thread_current();
   // Pointer to current lock holder.
   struct thread* lock_holder = lock->holder;
-  // Pointer to current lock.
-  struct lock* current_lock = lock;
   
     //=========================================TRY TO DONATE PRIORITY
   if(!thread_mlfqs && current_thread != NULL && lock_holder != NULL && lock_holder->priority < current_thread->priority){

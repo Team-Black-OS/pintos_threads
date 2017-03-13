@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <list.h>
 #include "threads/malloc.h"
+#include "threads/synch.h"
 /* Number of timer interrupts per second. */
 #define TIMER_FREQ 100
 
@@ -28,6 +29,12 @@ void timer_ndelay (int64_t nanoseconds);
 void timer_print_stats (void);
 /*Compares the wait times of two list elements.*/
 bool less_than(const struct list_elem *first, const struct list_elem *second, void* aux);
+
+struct sleepy_thread {
+  int64_t time_to_wakeup;
+  struct semaphore sema;
+  struct list_elem elem;
+};
 
 
 #endif /* devices/timer.h */

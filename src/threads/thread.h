@@ -90,24 +90,20 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
 
     int base_priority;
-        int priority;
-    //=================================
-    //int tempPriority; //holds value for priority donation
-    //===================================
+    int priority;
+
     struct list_elem allelem;           /* List element for all threads list. */
-
-    struct list thread_donors;
-
+    struct list thread_donors;          /* List contains pointers to all threads that
+                                           donated priority to this thread.*/
     struct lock* blocked_on;            /* Lock thread is waiting on. */
 
-    
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     struct list_elem prior_elem;
 
     //mlfqs
-    int nice;
-    struct fp_num recent_cpu;
+    int nice;                           /* Holds a value for the "niceness" of a thread. */
+    struct fp_num recent_cpu;           /* Holds a value for recent_cpu usage of a thread. */
 
 
 #ifdef USERPROG
