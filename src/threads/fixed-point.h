@@ -18,7 +18,7 @@ int32_t num;
 
 // Returns the integer value (Rounded to zero) of the given
 // fp_num structure.
-int32_t to_int(struct fp_num, int rounding);
+int32_t to_int(struct fp_num);
 
 // Returns the fixed-point value of the given integer number.
 struct fp_num to_fp(int32_t num);

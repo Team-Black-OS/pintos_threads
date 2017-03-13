@@ -8,6 +8,7 @@
 #include "threads/synch.h"
 #include "threads/thread.h"
 
+
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -229,6 +230,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   // Increment the tick count for this interrupt.
   ticks++;
+  
   bool woke_a_thread = false;
   // Check the list of sleeping threads. If the list is empty, do nothing.
   // If the list contains some sleeping threads, we need to check them to see if 
@@ -253,6 +255,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
       // Call sema_up on this sleep_thread structure's semaphore. This will wake the associated
       // thread. It can then return from the timer_sleep function and continue working.
       sema_up(ready_thread->sema);
+    
       // Set a boolean variable if we woke one or more thread(s) during this interrupt.
       woke_a_thread = true;
     }
@@ -267,8 +270,20 @@ timer_interrupt (struct intr_frame *args UNUSED)
   }
   // Call thread_tick(), pass the boolean variable that tells if we woke a thread or not.
   thread_tick (woke_a_thread);
+}
+void update_mlfqs(struct thread* t, void * v)
+{
+      if(timer_ticks() % 4 == 0){
+      calc_priority(t);
+      }
+      if (timer_ticks() % TIMER_FREQ == 0)
+      {
+      calc_recent_cpu(t);
+      // update load_avg?
+      calc_load_avg();
+      // update priority?
 
-
+    }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include <threads/fixed-point.h>
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -104,6 +105,10 @@ struct thread
     struct list_elem elem;              /* List element. */
     struct list_elem prior_elem;
 
+    //mlfqs
+    int nice;
+    struct fp_num recent_cpu;
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -121,6 +126,8 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
+
 
 void thread_init (void);
 void thread_start (void);
@@ -157,6 +164,12 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+void calc_priority(struct thread *t);
+void calc_recent_cpu(struct thread *t);
+void calc_load_avg(void);
+
+void update_mlfqs(struct thread* t, void * v);
 
 bool thr_less(const struct list_elem *first,const struct list_elem *second,void* aux);
 bool thr_prior_less(const struct list_elem *first, const struct list_elem *second, void* aux);

@@ -4,22 +4,9 @@ const int ROUNDDOWN = 2;
 const int ROUNDNEAREST = 3;
 const int64_t MULTIPLICAND = 16384;
 const int64_t FRAC_MULTIPLICAND = 262144;
-int32_t to_int(struct fp_num fixedpoint, int rounding){
-    switch(rounding){
-        case 1 :
-
-        break;
-        case 2 :
-        return (fixedpoint.num / MULTIPLICAND);
-        break;
-        case 3 :
-
-        break;
-        default :
-
-        break;
-    }
-    
+int32_t to_int(struct fp_num fixedpoint){
+    int32_t res = (fixedpoint.num / MULTIPLICAND);
+        return res;
 }
 
 struct fp_num to_fp(int32_t num) {
@@ -30,40 +17,46 @@ struct fp_num to_fp(int32_t num) {
 
 // Adds two fixed-point numbers. Result is a fixed-point number.
 struct fp_num add(struct fp_num one,struct fp_num two){
-    one.num = (one.num+two.num);
-    return one;
+    struct fp_num res;
+    res.num = (one.num+two.num);
+    return res;
 }
 
 // Subtracts two fixed-point numbers. Result is a fixed point number.
 struct fp_num subtract_fp(struct fp_num one,struct fp_num two){
-    one.num = (one.num-two.num);
-    return one;
+    struct fp_num res;
+    res.num = (one.num-two.num);
+    return res;
 }
 
 // Adds a fixed pointer number and an integer number. Result is a fixed-point
 // number.
 struct fp_num add_fp_int(struct fp_num fixed,int32_t intg){
-    fixed.num = (fixed.num + (intg*MULTIPLICAND));
-    return fixed;
+    struct fp_num res;
+    res.num = (fixed.num + (intg*MULTIPLICAND));
+    return res;
 }
 
 // Subtracts an integer number from a fixed-point number. Result is a fixed-point number.
 struct fp_num subtract_int_fp(struct fp_num fixed,int32_t intg){
-    fixed.num = (fixed.num - (intg*MULTIPLICAND));
-    return fixed;
+    struct fp_num res;
+    res.num = (fixed.num - (intg*MULTIPLICAND));
+    return res;
 }
 
 // Multiplies two fixed-point numbers. Result is a fixed-point number.
 // Note: There is no overflow detection.
 struct fp_num multiply_fp(struct fp_num one, struct fp_num two){
-    one.num = (((int64_t) one.num) * two.num)/MULTIPLICAND;
-    return one;
+    struct fp_num res;
+    res.num = (((int64_t) one.num) * two.num)/MULTIPLICAND;
+    return res;
 }
 
 // Multiplies a fixed-point number with an integer number. Result is fixed-point.
 struct fp_num multiply_int_fp(struct fp_num fixed,int32_t intg){
-    fixed.num = (fixed.num*intg);
-    return fixed;
+    struct fp_num res;
+    res.num = (fixed.num*intg);
+    return res;
 }
 
 // Divides two fixed-point numbers. Result is fixed-point.
@@ -78,16 +71,14 @@ struct fp_num divide_fp(struct fp_num one,struct fp_num two){
 
 // Divides a fixed-point number by an integer number. Result is fixed-point.
 struct fp_num divide_fp_int(struct fp_num fixed,int32_t intg){
-    fixed.num = (fixed.num/intg);
-    return fixed;
+    struct fp_num res;
+    res.num = (fixed.num/intg);
+    return res;
 }
 
 void print_fp(struct fp_num input){
-    int32_t int_part = input.num/MULTIPLICAND;
-    uint64_t frac_part = input.num * FRAC_MULTIPLICAND;
-    printf("Integer part: %d\n",int_part);
-    printf("Fraction part: %x\n",frac_part);
-}
-void frac_to_dec(uint64_t fract_part){
-    
+    // Get integer version of the number, multiply by 100 so we can print as
+    // decimal.
+    int32_t temp = to_int(multiply_int_fp(input,100));
+    printf("%d.%d\n",temp/100,temp%100);
 }
