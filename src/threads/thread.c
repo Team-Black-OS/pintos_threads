@@ -170,6 +170,7 @@ thread_tick (bool thread_was_woken)
   if(thread_mlfqs){
     enum intr_level old_level = intr_disable();
     if(timer_ticks() % TIMER_FREQ == 0){
+      calc_load_avg();
       thread_foreach(&update_mlfqs, NULL);
     }
     if(timer_ticks() % 4 == 0){
@@ -190,7 +191,7 @@ void update_mlfqs(struct thread* t, void * v)
 
       calc_recent_cpu(t);
       // update load_avg?
-      calc_load_avg();
+
       // update priority?
   
 }
@@ -526,7 +527,11 @@ void calc_load_avg(void)
 {
   struct fp_num l1 = divide_fp(to_fp(59), to_fp(60));
   l1 = multiply_fp(l1, load_avg);
-  struct fp_num l2 = divide_fp(to_fp(list_size(&ready_list)+1), to_fp(60));
+  struct fp_num l3 = to_fp(list_size(&ready_list));
+  if(thread_current() != idle_thread){
+    l3 = add_fp_int(l3,1);
+  }
+  struct fp_num l2 = divide_fp(l3, to_fp(60));
   //printf("Ready List size: %d\nLoad Average: ",list_size(&ready_list));
   //print_fp(load_avg);
   //printf("\n");
