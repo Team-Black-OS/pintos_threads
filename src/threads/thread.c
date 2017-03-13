@@ -12,6 +12,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -108,7 +109,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-
+  load_avg = to_fp(LOAD_AVG_INIT);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
@@ -124,7 +125,7 @@ thread_start (void)
   /* Create the idle thread. */
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
-  load_avg = to_fp(LOAD_AVG_INIT);
+
   thread_create ("idle", PRI_MIN, idle, &idle_started);
 
   /* Start preemptive thread scheduling. */
@@ -164,14 +165,19 @@ thread_tick (bool thread_was_woken)
     // if not the idle_thread
     // increment recent_cpu for current thread at every timer tick
     thread_current()->recent_cpu = add_fp_int(thread_current()->recent_cpu,1);
-
+  }
      // update priority, recent_cpu, load_avg
   if(thread_mlfqs){
     enum intr_level old_level = intr_disable();
-    thread_foreach(&update_mlfqs, NULL);
+    if(timer_ticks() % TIMER_FREQ == 0){
+      thread_foreach(&update_mlfqs, NULL);
+    }
+    if(timer_ticks() % 4 == 0){
+      thread_foreach(&update_priority,NULL);
+    }
     intr_set_level(old_level);
     }
-  }
+  
     
   /* Enforce preemption. */
   // Added a new check to see if thread(s) were woken during the last timer interrupt.
@@ -179,8 +185,19 @@ thread_tick (bool thread_was_woken)
     intr_yield_on_return ();
 }
 
+void update_mlfqs(struct thread* t, void * v)
+{
 
+      calc_recent_cpu(t);
+      // update load_avg?
+      calc_load_avg();
+      // update priority?
+  
+}
 
+void update_priority(struct thread* t, void* v){
+  calc_priority(t);
+}
 
 /* Prints thread statistics. */
 void
@@ -483,6 +500,14 @@ void calc_priority(struct thread *t)
   }
   //printf("Calculated Priority: %d\n",p);
   t->priority = p;
+
+  if(list_entry(list_max(&ready_list,&thr_less,NULL),struct thread,elem)->priority > t->priority){
+    if(intr_context()){
+    intr_yield_on_return();
+    }else{
+      thread_yield();
+    }
+  }
   // thread's priority has changed
 }
 
@@ -501,11 +526,10 @@ void calc_load_avg(void)
 {
   struct fp_num l1 = divide_fp(to_fp(59), to_fp(60));
   l1 = multiply_fp(l1, load_avg);
-  struct fp_num l2 = divide_fp(to_fp(1), to_fp(60));
+  struct fp_num l2 = divide_fp(to_fp(list_size(&ready_list)+1), to_fp(60));
   //printf("Ready List size: %d\nLoad Average: ",list_size(&ready_list));
   //print_fp(load_avg);
   //printf("\n");
-  l2 = multiply_fp(to_fp(list_size(&ready_list)), load_avg);
 
   load_avg = add(l1,l2);
 }

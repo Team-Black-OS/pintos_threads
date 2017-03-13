@@ -1,5 +1,6 @@
 #include "threads/fixed-point.h"
-
+#include "threads/thread.h"
+#include <list.h>
 void fixed_point(void){
     printf("Dividing 59/60. Expect .98\n");
 
@@ -12,4 +13,9 @@ void fixed_point(void){
     printf("Dividing 1/60. Expect .01667\n");
     two = divide_fp(to_fp(1),to_fp(60));
     print_fp(two);
+
+    struct fp_num four;
+
+    four = to_fp(0+1);
+    print_fp(four);
 }

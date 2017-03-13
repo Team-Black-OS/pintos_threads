@@ -271,20 +271,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   // Call thread_tick(), pass the boolean variable that tells if we woke a thread or not.
   thread_tick (woke_a_thread);
 }
-void update_mlfqs(struct thread* t, void * v)
-{
-      if(timer_ticks() % 4 == 0){
-      calc_priority(t);
-      }
-      if (timer_ticks() % TIMER_FREQ == 0)
-      {
-      calc_recent_cpu(t);
-      // update load_avg?
-      calc_load_avg();
-      // update priority?
 
-    }
-}
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
