@@ -30,25 +30,25 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
+
 /*
 From strings.c
-
 Using strtok_r()
-   char s[] = "  String to  tokenize. ";
-   char *token, *save_ptr;
-
-   for (token = strtok_r (s, " ", &save_ptr); token != NULL;
-        token = strtok_r (NULL, " ", &save_ptr))
-     printf ("'%s'\n", token);
-
-   outputs:
-
-     'String'
-     'to'
-     'tokenize.'
-
-
 */
+
+  int MAX_WORDS = 50;              // setting 50 string word limit (as per manual) for size of file_name, equates to about 128 byte size argument string
+  char *arguments[MAX_WORDS];      // char* array to hold each argument
+  char * s = file_name;            // set pointer to file_name arg
+  char *token, *save_ptr;          // ptrs sent in for tracking location in string, do not need initial values.
+  int arg_count = 0;
+  for (token = strtok_r (s, " ", &save_ptr); token != NULL;
+        token = strtok_r (NULL, " ", &save_ptr))
+  {
+     printf ("argument:   '%s'\n", token);
+     arguments[arg_count] = token; // set ptr at index arg_count to token, a char* returned from strtok_r()
+     ++arg_count;
+  }
+
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
