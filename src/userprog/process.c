@@ -30,7 +30,25 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
+/*
+From strings.c
 
+Using strtok_r()
+   char s[] = "  String to  tokenize. ";
+   char *token, *save_ptr;
+
+   for (token = strtok_r (s, " ", &save_ptr); token != NULL;
+        token = strtok_r (NULL, " ", &save_ptr))
+     printf ("'%s'\n", token);
+
+   outputs:
+
+     'String'
+     'to'
+     'tokenize.'
+
+
+*/
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
